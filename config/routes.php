@@ -45,18 +45,38 @@ use Cake\Routing\RouteBuilder;
 $routes->setRouteClass(DashedRoute::class);
 
 $routes->scope('/', function (RouteBuilder $builder) {
+    #$routes->applyMiddleware('csrf');
+#Router::scope('/', function (RouteBuilder $builder) {
     /*
      * Here, we are connecting '/' (base path) to a controller called 'Pages',
      * its action called 'display', and we pass a param to select the view file
      * to use (in this case, templates/Pages/home.php)...
      */
-    $builder->connect('/', ['controller' => 'Pages', 'action' => 'display', 'home']);
+    #$builder->connect('/', ['controller' => 'Pages', 'action' => 'display', 'home']);
+    #$builder->mapResources('articles');
+    #$builder->parseExtensions();
+    $builder->setExtensions(['json', 'xml']);
+    $builder->connect('/.well-known/:controller/*', [
+    'action' => 'index',
+    ], [
+    'controller' => '(jwks)',
+    ]);
+    
+    $builder->connect('/', ['controller' => 'Articles', 'action' => 'index']);
+    #$builder->setExtensions(['json', 'xml']);
+    $builder->resources('Articles');
 
+    #$builder->connect('/articles/*', ['controller' => 'Articles', 'action' => 'view']);
+    #$builder->connect('/articles/*', ['controller' => 'Articles', 'action' => 'index']); 
+    #$builder->connect('/articles/add/*', ['controller' => 'Articles', 'action' => 'add']); 
+    $builder->connect('/articles/add/*', 'Articles::add');
+    $builder->connect('/articles/edit/*', ['controller' => 'Articles', 'action' => 'edit']);
+    $builder->connect('/articles/delete/*', ['controller' => 'Articles', 'action' => 'delete']);     
     /*
      * ...and connect the rest of 'Pages' controller's URLs.
      */
-    $builder->connect('/pages/*', 'Pages::display');
-
+    #$builder->connect('/pages/*', 'Pages::display');
+    
     /*
      * Connect catchall routes for all controllers.
      *
@@ -88,3 +108,14 @@ $routes->scope('/', function (RouteBuilder $builder) {
  * });
  * ```
  */
+//sets up to MAP requests
+/*Router::scope('/', function (RouteBuilder $routes) {
+    // Prior to 3.5.0 use `extensions()`
+    $routes->setExtensions(['json']);
+    $routes->resources('Articles');
+});*/
+
+
+
+
+

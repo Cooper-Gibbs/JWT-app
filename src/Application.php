@@ -23,19 +23,23 @@ use Cake\Datasource\FactoryLocator;
 use Cake\Error\Middleware\ErrorHandlerMiddleware;
 use Cake\Http\BaseApplication;
 use Cake\Http\Middleware\BodyParserMiddleware;
-use Cake\Http\Middleware\CsrfProtectionMiddleware;
+#use Cake\Http\Middleware\CsrfProtectionMiddleware;
 use Cake\Http\MiddlewareQueue;
 use Cake\ORM\Locator\TableLocator;
 use Cake\Routing\Middleware\AssetMiddleware;
 use Cake\Routing\Middleware\RoutingMiddleware;
-
+use Authentication\AuthenticationService;
+use Authentication\AuthenticationServiceInterface;
+use Authentication\AuthenticationServiceProviderInterface;
+use Authentication\Middleware\AuthenticationMiddleware;
+use Psr\Http\Message\ServerRequestInterface;
 /**
  * Application setup class.
  *
  * This defines the bootstrapping logic and middleware layers you
  * want to use in your application.
  */
-class Application extends BaseApplication
+class Application extends BaseApplication implements AuthenticationServiceProviderInterface
 {
     /**
      * Load all the application configuration and bootstrap logic.
@@ -44,6 +48,8 @@ class Application extends BaseApplication
      */
     public function bootstrap(): void
     {
+        $this->addPlugin('ADmad/JwtAuth');
+
         // Call parent to load bootstrap from files.
         parent::bootstrap();
 
@@ -55,18 +61,26 @@ class Application extends BaseApplication
                 (new TableLocator())->allowFallbackClass(false)
             );
         }
+        $this->addPlugin('Migrations');
+        // in src/Application.php in the bootstrap() method.
+        $this->addPlugin('Authentication');
 
         /*
          * Only try to load DebugKit in development mode
          * Debug Kit should not be installed on a production system
          */
         if (Configure::read('debug')) {
-            $this->addPlugin('DebugKit');
+//            $this->addPlugin('DebugKit');
         }
 
         // Load more plugins here
     }
-
+    /*public function routes($routes)
+    {
+        $options = ['httpOnly' => true];
+        $routes->registerMiddleware('csrf', new CsrfProtectionMiddleware($options));
+        parent::routes($routes);
+    }*/
     /**
      * Setup the middleware queue your application will use.
      *
@@ -100,13 +114,61 @@ class Application extends BaseApplication
 
             // Cross Site Request Forgery (CSRF) Protection Middleware
             // https://book.cakephp.org/4/en/controllers/middleware.html#cross-site-request-forgery-csrf-middleware
-            ->add(new CsrfProtectionMiddleware([
-                'httponly' => true,
-            ]));
-
+            #->add(new CsrfProtectionMiddleware([
+                #'httponly' => true,
+               # ]))
+            // ... other middleware added before
+            ->add(new RoutingMiddleware($this))
+            // add Authentication after RoutingMiddleware
+            ->add(new AuthenticationMiddleware($this));
+    
         return $middlewareQueue;
     }
+    public function getAuthenticationService(ServerRequestInterface $request): AuthenticationServiceInterface
+    {
+        /*
+        $authenticationService = new AuthenticationService([
+            'unauthenticatedRedirect' => '/users/login',
+            'queryParam' => 'redirect',
+        ]);
 
+        // Load identifiers, ensure we check email and password fields
+        $authenticationService->loadIdentifier('Authentication.Password', [
+            'fields' => [
+                'username' => 'email',
+                'password' => 'password',
+            ]
+        ]);
+
+        // Load the authenticators, you want session first
+        $authenticationService->loadAuthenticator('Authentication.Session');
+        // Configure form data check to pick email and password
+        $authenticationService->loadAuthenticator('Authentication.Form', [
+            'fields' => [
+                #'username' => 'id'
+                'username' => 'email',
+               'password' => 'password',
+            ],
+            'loginUrl' => '/users/login',
+        ]);
+
+        return $authenticationService;
+        */
+        # generate private key
+        #openssl genrsa -out config/jwt.key 1024
+        # generate public key
+        #openssl rsa -in config/jwt.key -outform PEM -pubout -out config/jwt.pem
+        $service = new AuthenticationService();
+        // ...
+        $service->loadIdentifier('Authentication.JwtSubject');
+        $service->loadAuthenticator('Authentication.Jwt', [
+            'secretKey' => file_get_contents(CONFIG . '/jwt.pem'),
+            'algorithms' => ['RS256'],
+            'returnPayload' => false
+        ]);
+        return $service;
+        
+    }
     /**
      * Register application container services.
      *
