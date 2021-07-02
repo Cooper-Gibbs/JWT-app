@@ -55,11 +55,11 @@ class UsersController extends AppController
              $this->Flash->error(__('Unable to add the user.'));
          }
          $this->set('user', $user);
-     }
-     /*
+     }*/
      
-    /*public function add() {
-        $this->request->allowMethod(['post', 'put']);
+     
+    public function add() {
+        #$this->request->allowMethod(['post', 'put']);
         $user = $this->Users->newEntity($this->request->getData());
         if ($this->Users->save($user)) {
             $message = 'Saved';
@@ -71,7 +71,8 @@ class UsersController extends AppController
             'user' => $user,
             '_serialize' => ['message', 'user']
         ]);
-    }*/
+    }
+    /*
     public function add()
     {
         $user = $this->Users->newEmptyEntity();
@@ -84,14 +85,15 @@ class UsersController extends AppController
                     [
                         'sub' => $user->id,
                         'exp' =>  time() + 604800
-                    ])
-                #Security::getSalt())
+                    ],
+                $this->Security::getSalt())
             ]);
         //echo Security::getSalt();
         #}
         $this->viewBuilder()->setOption('serialize', ['data']);
         $this->RequestHandler->renderAs($this, 'json');
     }
+    */
     /*
     public function add()
     {
@@ -192,6 +194,52 @@ class UsersController extends AppController
         ]);
         return $this->redirect($redirect);
     }*/
+
+    public function login()
+{
+    $result = $this->Authentication->getResult();
+    if ($result->isValid()) {
+        $privateKey = file_get_contents(CONFIG . '/jwt.key');
+        $user = $result->getData();
+        $payload = [
+            'iss' => 'myapp',
+            'sub' => $user->id,
+            'exp' => time() + 3600,
+        ];
+        $json = [
+            'token' => JWT::encode($payload, $privateKey, 'RS256'),
+        ];
+        $message = "Success";
+       
+       
+        
+    
+    //$this->set(compact('json'));
+    //$this->viewBuilder()->setOption('serialize', 'json');
+    $this->set([
+        'message' => $message,
+        'json' => $json,
+        '_serialize' => ['message', 'json']
+    ]);
+    $redirect = $this->request->getQuery('redirect', [
+            'controller' => 'Articles',
+            'action' => 'index',
+        ]);
+    return $this->redirect($redirect);
+    } else {
+        $this->response = $this->response->withStatus(401);
+        $json = [];
+        $message = "NOT a Success";
+
+        $this->set([
+            'message' => $message,
+            'json' => $json,
+            '_serialize' => ['message', 'json']
+        ]);
+    }
+}
+
+    /*
     public function login()
     {
         $this->request->allowMethod(['get', 'post']);
@@ -211,7 +259,7 @@ class UsersController extends AppController
             $this->Flash->error(__('Invalid email or password'));
         }
     }
-    
+    */
     // in src/Controller/UsersController.php
     public function logout()
     {

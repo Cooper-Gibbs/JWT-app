@@ -18,6 +18,7 @@ namespace App\Controller;
 use Cake\Event\EventInterface;
 use Cake\Controller\Controller;
 use Cake\Event\EventListenerInterface;
+use Cake\Utility\Security;
 /**
  * Application Controller
  *
