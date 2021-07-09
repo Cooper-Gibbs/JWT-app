@@ -210,34 +210,19 @@ class UsersController extends AppController
             'token' => JWT::encode($payload, $privateKey, 'RS256'),
         ];
         $message = "Success";
-       
-       
-        
-    
-    //$this->set(compact('json'));
-    //$this->viewBuilder()->setOption('serialize', 'json');
-    $this->set([
-        'message' => $message,
-        'json' => $json,
-        '_serialize' => ['message', 'json']
-    ]);
-    $redirect = $this->request->getQuery('redirect', [
-            'controller' => 'Articles',
-            'action' => 'index',
-        ]);
-    return $this->redirect($redirect);
-    } else {
+     } else {
         $this->response = $this->response->withStatus(401);
         $json = [];
         $message = "NOT a Success";
 
+       }
         $this->set([
             'message' => $message,
             'json' => $json,
             '_serialize' => ['message', 'json']
         ]);
     }
-}
+
 
     /*
     public function login()
